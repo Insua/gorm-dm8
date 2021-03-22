@@ -3,7 +3,7 @@ package dm8
 import (
 	"bytes"
 	"database/sql"
-	"github.com/luochaoqun01/gorm-dm8/clauses"
+	"github.com/Insua/gorm-dm8/clauses"
 	"reflect"
 
 	"github.com/thoas/go-funk"

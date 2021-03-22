@@ -1,4 +1,4 @@
-package oracle
+package dm8
 
 import (
 	"database/sql"
