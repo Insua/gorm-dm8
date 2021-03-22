@@ -3,7 +3,7 @@ module github.com/Insua/gorm-dm8
 go 1.14
 
 require (
-	github.com/Insua/dm v0.0.0-20210322011241-2a32cfe9c17a // indirect
+	github.com/Insua/dm v0.0.1 // indirect
 	github.com/ducla5/gorm-driver-oracle v0.0.0-20201103101024-7ac6a2acc8f7 // indirect
 	github.com/emirpasic/gods v1.12.0
 	github.com/godror/godror v0.24.2 // indirect
