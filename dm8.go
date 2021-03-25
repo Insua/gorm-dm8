@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	_ "github.com/godror/godror"
+	_ "github.com/Insua/dm"
 	"github.com/thoas/go-funk"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm/migrator"
 	"gorm.io/gorm/schema"
 
-	"github.com/ducla5/gorm-driver-oracle/clauses"
+	"github.com/Insua/gorm-dm8/clauses"
 )
 
 type Config struct {
@@ -43,7 +43,7 @@ func (d Dialector) DummyTableName() string {
 }
 
 func (d Dialector) Name() string {
-	return "oracle"
+	return "dm"
 }
 
 func (d Dialector) Initialize(db *gorm.DB) (err error) {
@@ -52,7 +52,7 @@ func (d Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{WithReturning: true})
 
-	d.DriverName = "godror"
+	d.DriverName = "dm"
 
 	if d.Conn != nil {
 		db.ConnPool = d.Conn
