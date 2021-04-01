@@ -2,7 +2,6 @@ package dm8
 
 import (
 	"bytes"
-	"database/sql"
 	"github.com/Insua/gorm-dm8/clauses"
 	"reflect"
 
@@ -16,7 +15,6 @@ import (
 func Create(db *gorm.DB) {
 	stmt := db.Statement
 	schema := stmt.Schema
-	boundVars := make(map[string]int)
 
 	if stmt == nil || schema == nil {
 		return
@@ -72,15 +70,15 @@ func Create(db *gorm.DB) {
 		} else {
 			stmt.AddClauseIfNotExists(clause.Insert{Table: clause.Table{Name: stmt.Table}})
 			stmt.AddClause(clause.Values{Columns: values.Columns, Values: [][]interface{}{values.Values[0]}})
-			if hasDefaultValues {
+			/*if hasDefaultValues {
 				stmt.AddClauseIfNotExists(clause.Returning{
 					Columns: funk.Map(schema.FieldsWithDefaultDBValue, func(field *gormSchema.Field) clause.Column {
 						return clause.Column{Name: field.DBName}
 					}).([]clause.Column),
 				})
-			}
+			}*/
 			stmt.Build("INSERT", "VALUES", "RETURNING")
-			if hasDefaultValues {
+			/*if hasDefaultValues {
 				stmt.WriteString(" INTO ")
 				for idx, field := range schema.FieldsWithDefaultDBValue {
 					if idx > 0 {
@@ -89,7 +87,7 @@ func Create(db *gorm.DB) {
 					boundVars[field.Name] = len(stmt.Vars)
 					stmt.AddVar(stmt, sql.Out{Dest: reflect.New(field.FieldType).Interface()})
 				}
-			}
+			}*/
 		}
 
 		if !db.DryRun {
@@ -112,6 +110,7 @@ func Create(db *gorm.DB) {
 					db.RowsAffected, _ = result.RowsAffected()
 
 					insertTo := stmt.ReflectValue
+
 					switch insertTo.Kind() {
 					case reflect.Slice, reflect.Array:
 						insertTo = insertTo.Index(idx)
@@ -120,15 +119,23 @@ func Create(db *gorm.DB) {
 					if hasDefaultValues {
 						// bind returning value back to reflected value in the respective fields
 						funk.ForEach(
-							funk.Filter(schema.FieldsWithDefaultDBValue, func(field *gormSchema.Field) bool {
+							/*funk.Filter(schema.FieldsWithDefaultDBValue, func(field *gormSchema.Field) bool {
 								return funk.Contains(boundVars, field.Name)
-							}),
+							}),*/
+							schema.FieldsWithDefaultDBValue,
 							func(field *gormSchema.Field) {
 								switch insertTo.Kind() {
 								case reflect.Struct:
-									if err = field.Set(insertTo, stmt.Vars[boundVars[field.Name]].(sql.Out).Dest); err != nil {
-										db.AddError(err)
+									if field.PrimaryKey && field.AutoIncrement {
+										if id, err := result.LastInsertId(); err == nil {
+											if err := field.Set(insertTo, id); err != nil {
+												db.AddError(err)
+											}
+										} else {
+											db.AddError(err)
+										}
 									}
+									return
 								case reflect.Map:
 									// todo 设置id的值
 								}

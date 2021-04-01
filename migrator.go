@@ -15,7 +15,7 @@ type Migrator struct {
 
 func (m Migrator) CurrentDatabase() (name string) {
 	m.DB.Raw(
-		fmt.Sprintf(`SELECT ORA_DATABASE_NAME as "Current Database" FROM %s`, m.Dialector.(Dialector).DummyTableName()),
+		fmt.Sprintf(`SELECT DISTINCT CURR_SCH AS name FROM V$SESSIONS WHERE CURR_SCH NOT IN ('SYSDBA')`),
 	).Row().Scan(&name)
 	return
 }
@@ -44,9 +44,9 @@ func (m Migrator) DropTable(values ...interface{}) error {
 
 func (m Migrator) HasTable(value interface{}) bool {
 	var count int64
-
+	currentDatabase := m.DB.Migrator().CurrentDatabase()
 	m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		return m.DB.Raw("SELECT COUNT(*) FROM USER_TABLES WHERE TABLE_NAME = ?", stmt.Table).Row().Scan(&count)
+		return m.DB.Raw("SELECT COUNT(*) FROM DBA_SEGMENTS WHERE OWNER = ? AND SEGMENT_NAME = ?", currentDatabase, stmt.Table).Row().Scan(&count)
 	})
 
 	return count > 0
@@ -86,10 +86,6 @@ func (m Migrator) RenameTable(oldName, newName interface{}) (err error) {
 }
 
 func (m Migrator) AddColumn(value interface{}, field string) error {
-	if !m.HasColumn(value, field) {
-		return nil
-	}
-
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(field); field != nil {
 			return m.DB.Exec(
@@ -120,11 +116,6 @@ func (m Migrator) DropColumn(value interface{}, name string) error {
 }
 
 func (m Migrator) AlterColumn(value interface{}, field string) error {
-	field = strings.ToUpper(field)
-	if !m.HasColumn(value, field) {
-		return nil
-	}
-
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(field); field != nil {
 			return m.DB.Exec(
@@ -140,8 +131,9 @@ func (m Migrator) AlterColumn(value interface{}, field string) error {
 
 func (m Migrator) HasColumn(value interface{}, field string) bool {
 	var count int64
+	currentDatabase := m.DB.Migrator().CurrentDatabase()
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		return m.DB.Raw("SELECT COUNT(*) FROM USER_TAB_COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?", stmt.Table, field).Row().Scan(&count)
+		return m.DB.Raw("SELECT COUNT(*) FROM ALL_TAB_COLUMNS WHERE OWNER = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?", currentDatabase, stmt.Table, field).Row().Scan(&count)
 	}) == nil && count > 0
 }
 
