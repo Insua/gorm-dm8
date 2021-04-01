@@ -6,5 +6,5 @@ require (
 	github.com/Insua/dm v0.0.1
 	github.com/emirpasic/gods v1.12.0
 	github.com/thoas/go-funk v0.8.0
-	gorm.io/gorm v1.21.5
+	gorm.io/gorm v1.21.6
 )
