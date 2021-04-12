@@ -13,6 +13,16 @@ type Migrator struct {
 	migrator.Migrator
 }
 
+func (m Migrator) CaseSensitiveFlag() (flag bool) {
+	s := ""
+	flag = false
+	m.DB.Raw(`Select SF_GET_CASE_SENSITIVE_FLAG() as flag`).Row().Scan(&s)
+	if s == "1" {
+		flag = true
+	}
+	return true
+}
+
 func (m Migrator) CurrentDatabase() (name string) {
 	m.DB.Raw(
 		fmt.Sprintf(`SELECT DISTINCT CURR_SCH AS name FROM V$SESSIONS WHERE CURR_SCH NOT IN ('SYSDBA')`),
@@ -46,7 +56,11 @@ func (m Migrator) HasTable(value interface{}) bool {
 	var count int64
 	currentDatabase := m.DB.Migrator().CurrentDatabase()
 	m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		return m.DB.Raw("SELECT COUNT(*) FROM DBA_SEGMENTS WHERE OWNER = ? AND SEGMENT_NAME = ?", currentDatabase, stmt.Table).Row().Scan(&count)
+		table := stmt.Table
+		if m.CaseSensitiveFlag() {
+			table = strings.ToUpper(table)
+		}
+		return m.DB.Raw("SELECT COUNT(*) FROM DBA_SEGMENTS WHERE OWNER = ? AND SEGMENT_NAME = ? AND SEGMENT_TYPE = ?", currentDatabase, table, "TABLE").Row().Scan(&count)
 	})
 
 	return count > 0
