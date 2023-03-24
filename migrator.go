@@ -24,9 +24,7 @@ func (m Migrator) CaseSensitiveFlag() (flag bool) {
 }
 
 func (m Migrator) CurrentDatabase() (name string) {
-	m.DB.Raw(
-		fmt.Sprintf(`SELECT DISTINCT CURR_SCH AS name FROM V$SESSIONS WHERE CURR_SCH NOT IN ('SYSDBA')`),
-	).Row().Scan(&name)
+	m.DB.Raw("SELECT SYS_CONTEXT ('userenv', 'current_schema') FROM DUAL").Row().Scan(&name)
 	return
 }
 
